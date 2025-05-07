@@ -1,148 +1,141 @@
-# Tkinter Password Manager
+# Password Manager Pro (Firebase Secure Vault)
 
-A desktop-based password manager application built with Python's Tkinter GUI toolkit and MySQL for data storage. This application provides basic functionality for user registration, login, and managing password entries.
-
-**⚠️ IMPORTANT SECURITY WARNING ⚠️**
-
-This application, in its current state as provided in the initial code, stores **user account passwords and saved website/application passwords in PLAIN TEXT** in the database. This is **EXTREMELY INSECURE** and makes the stored credentials highly vulnerable.
-
-**DO NOT USE THIS APPLICATION FOR REAL SENSITIVE PASSWORDS WITHOUT IMPLEMENTING PROPER SECURITY MEASURES:**
-
-1.  **User Password Hashing:** User account passwords (`users` table) MUST be hashed using a strong algorithm like bcrypt or Argon2 before storing them.
-2.  **Stored Password Encryption:** Passwords saved for websites/apps (`passwords` table) MUST be encrypted using a strong symmetric encryption algorithm (like AES-GCM). The encryption key should ideally be derived from the user's master password or managed securely.
-
-This project primarily serves as an educational example demonstrating Tkinter GUI development, database interaction with MySQL, and application structure. **It is NOT a production-ready secure password manager.**
+Password Manager Pro is a desktop application built with Python (Tkinter) that allows users to securely store and manage their login credentials. It uses Firebase for user authentication and Firestore as a cloud database, with client-side encryption to ensure that sensitive password data is protected even from the database administrators.
 
 ## Features
 
-*   User Registration with email and password.
-*   User Login.
-*   Password Recovery simulation (checks if recovery email exists).
-*   Add new password entries (Website/App Name, Username, Password, Associated Email).
-*   View stored passwords in a list (excluding the actual password for security).
-*   Edit existing password entries.
-*   Delete password entries.
-*   Search functionality for password entries (by App Name, Username, or Email).
-*   Edit User Profile (Name, New Password, Recovery Email, PIN - PIN security also needs improvement).
-*   Password strength indicator during registration.
-*   Show/Hide password visibility toggle.
-*   Basic input validation (e.g., email format).
-*   Themed UI using `ttk` styles.
-
-## Screenshots (Placeholder)
-
-*(It's highly recommended to add screenshots of your application here)*
-
-*   *Login Screen*
-*   *Registration Screen*
-*   *Dashboard View*
-*   *Add/Edit Password Form*
+*   **User Authentication:** Secure user registration and login powered by Firebase Authentication.
+*   **Master Password Recovery:** Password reset functionality via email (Firebase Auth).
+*   **Cloud Storage:** Credentials stored securely in Google Firestore.
+*   **Client-Side Encryption:**
+    *   Master passwords are **not** stored directly.
+    *   A unique salt is generated for each user.
+    *   An encryption key is derived from the user's master password and their unique salt using PBKDF2HMAC-SHA256.
+    *   All stored credential passwords and notes are encrypted using Fernet (AES-128-CBC) with the derived key **before** being sent to Firestore.
+*   **Credential Management (CRUD):**
+    *   Add new credential entries (Service Name, Login ID, Password, Website, Notes, Tags).
+    *   View and search existing credentials.
+    *   Edit existing credential entries.
+    *   Delete credential entries.
+*   **Strong Password Generator:** Built-in tool to generate strong, random passwords.
+*   **Clipboard Management:**
+    *   Copy passwords and login IDs to the clipboard.
+    *   Automatic clipboard clearing after 30 seconds for enhanced security.
+*   **User Profile Management:**
+    *   Edit display name.
+    *   Change master password (triggers re-encryption of all stored credentials).
+    *   Update password hint and account recovery email.
+*   **User-Friendly Interface:** Built with Tkinter and ttkthemes for a modern look and feel.
+*   **Cross-Platform (Python Dependent):** Should run on any system where Python and Tkinter are available.
 
 ## Prerequisites
 
-*   **Python 3.x:** Download from [python.org](https://www.python.org/)
-*   **pip:** Usually included with Python installations.
-*   **MySQL Server:** A running MySQL database server (e.g., local installation, Docker container, cloud service). Download from [mysql.com](https://www.mysql.com/downloads/) or use package managers like `apt` or `brew`.
+*   **Python 3.7+:** Ensure you have Python installed.
+*   **pip:** Python package installer.
+*   **Firebase Project:** You need an active Firebase project.
+    *   Enable **Authentication** (Email/Password sign-in method).
+    *   Enable **Firestore Database** (start in production or test mode).
+*   **Firebase Admin SDK Service Account Key:**
+    *   In your Firebase project settings, go to "Service accounts."
+    *   Generate a new private key and download the JSON file.
+*   **Firebase Web API Key:**
+    *   In your Firebase project settings, under "General," find your Web API Key.
 
-## Installation and Setup
+## Setup Instructions
 
-1.  **Clone the Repository:**
+1.  **Clone the Repository (or Download Files):**
     ```bash
     git clone <your-repository-url>
     cd <repository-directory>
     ```
+    If you don't use Git, download `ui.py` and `firebase_service.py` into the same directory.
 
-2.  **Create a Virtual Environment (Recommended):**
+2.  **Install Dependencies:**
+    Open your terminal or command prompt in the project directory and run:
     ```bash
-    python -m venv venv
+    pip install tk Pillow firebase-admin bcrypt pyperclip cryptography requests
     ```
-    *   Activate the environment:
-        *   Windows (cmd/powershell): `.\venv\Scripts\activate`
-        *   macOS/Linux (bash/zsh): `source venv/bin/activate`
+    *   `tk`: Usually comes with Python, but `Pillow` needs it for image support.
+    *   `Pillow`: For graphical icons (optional, the app has text-based fallbacks).
+    *   `firebase-admin`: For Firebase Admin SDK (server-side operations like user profile management in Firestore).
+    *   `bcrypt`: For hashing the optional profile PIN (if used, currently part of profile hint).
+    *   `pyperclip`: For clipboard copy/paste functionality.
+    *   `cryptography`: For AES encryption (Fernet) and key derivation (PBKDF2HMAC).
+    *   `requests`: For making HTTP requests to Firebase Authentication REST APIs.
 
-3.  **Install Dependencies:**
-    Create a `requirements.txt` file with the following content:
-    ```txt
-    mysql-connector-python
-    # Add other libraries if you implement hashing/encryption, e.g.:
-    # bcrypt
-    # cryptography
-    ```
-    Then install:
-    ```bash
-    pip install -r requirements.txt
-    ```
+3.  **Configure Firebase:**
 
-4.  **Database Setup:**
-    *   Ensure your MySQL server is running.
-    *   Connect to your MySQL server using a client (e.g., `mysql` command line, MySQL Workbench, DBeaver).
-    *   Create the database and tables using the provided SQL schema. You can execute the content of the `database_schema.sql` file (or the schema provided in previous responses):
-        ```sql
-        -- Example using mysql command line:
-        mysql -u your_mysql_user -p < database_schema.sql
-        ```
-        *(Replace `your_mysql_user` with your MySQL username)*
-        *Make sure the `database_schema.sql` file contains the `CREATE DATABASE`, `USE database`, and `CREATE TABLE` statements.*
+    *   **Service Account Key:**
+        *   Rename the downloaded JSON service account key file to `serviceAccountKey.json`.
+        *   Place this `serviceAccountKey.json` file in the **same directory** as `ui.py` and `firebase_service.py`.
+        *   **IMPORTANT:** Add `serviceAccountKey.json` to your `.gitignore` file if you are using Git to prevent committing sensitive credentials.
+          ```
+          # .gitignore
+          serviceAccountKey.json
+          __pycache__/
+          *.pyc
+          ```
 
-5.  **Configuration:**
-    *   Open the Python script (e.g., `password_manager_app.py`).
-    *   Locate the `self.db_config` dictionary within the `__init__` method:
-        ```python
-        self.db_config = {
-            'host': 'localhost',         # Change if DB is not local
-            'user': 'your_db_user',      # CHANGE THIS to your DB username
-            'password': 'your_db_password', # CHANGE THIS to your DB password
-            'database': 'password_manager' # Change if you used a different DB name
-        }
-        ```
-    *   **IMPORTANT:** Update the `user` and `password` values to match your MySQL database credentials. For production, avoid hardcoding credentials; use environment variables or a secure configuration file instead.
+    *   **Web API Key:**
+        *   Open the `firebase_service.py` file.
+        *   Find the line:
+            ```python
+            FIREBASE_WEB_API_KEY = "AIzaSyByybBiHCbwMWnFUlQGUW3qQ9e0Iws9ZLo" # <<< IMPORTANT: REPLACE THIS
+            ```
+        *   Replace `"AIzaSyByybBiHCbwMWnFUlQGUW3qQ9e0Iws9ZLo"` (or whatever placeholder is there) with your **actual Firebase Web API Key** obtained from your Firebase project settings.
+
+4.  **Create Firestore Indexes (if prompted):**
+    *   The first time you log in and the application tries to fetch credentials, Firestore might require a composite index for querying and ordering.
+    *   The application's console output will display an error message with a direct link to create the required index in your Firebase console.
+    *   Click the link, review the pre-filled index configuration (it should be for the `credentials` collection, on fields `user_id` and `serviceName`), and create the index.
+    *   Wait for the index to finish building (status will change to "Enabled" in the Firebase console) before trying to log in again.
 
 ## Running the Application
 
-1.  Make sure your virtual environment is activated.
-2.  Make sure your MySQL server is running.
-3.  Navigate to the project directory in your terminal.
-4.  Run the main Python script:
+Once all dependencies are installed and Firebase is configured:
+
+1.  Navigate to the project directory in your terminal.
+2.  Run the main UI file:
     ```bash
-    python password_manager_app.py
+    python ui.py
     ```
-    *(Replace `password_manager_app.py` with the actual filename if you saved it differently).*
 
-## Security Considerations (Summary)
+## Usage
 
-*   **Plain Text Passwords:** The biggest flaw. Implement hashing and encryption immediately if used for real data.
-*   **Database Credentials:** Avoid hardcoding in the script for production deployments.
-*   **PIN Security:** Treat PINs like passwords; hash them or use more secure verification methods.
-*   **Input Sanitization:** While basic validation exists, ensure robust sanitization against potential injection attacks if extending functionality.
-*   **Error Handling:** Sensitive information should not be leaked in error messages shown to the user.
-*   **Session Management:** This desktop app uses a simple `current_user` variable. Web apps would need secure session handling.
+1.  **Register:**
+    *   Click "Register New Account" on the login screen.
+    *   Fill in your Full Name, Email (for login), a strong Master Password, and optionally a Password Hint and Account Recovery Email.
+    *   **Your Master Password is critical and cannot be recovered directly by the application. Only a password reset via Firebase Authentication is possible, which allows you to set a new Master Password.**
+2.  **Login:**
+    *   Enter your registered Email and Master Password.
+3.  **Dashboard:**
+    *   **View Credentials:** Your stored credentials will be listed.
+    *   **Search:** Use the search bar to filter credentials by service name, login ID, website, or tags.
+    *   **Add New:** Click "Add New" to add a new credential entry.
+    *   **View/Edit:** Select an entry and click "View/Edit" (or double-click) to modify its details.
+    *   **Copy Pwd:** Select an entry and click "Copy Pwd" to copy the decrypted password to your clipboard (clears in 30s).
+    *   **Delete:** Select one or more entries and click "Delete" to remove them.
+    *   **Right-Click Context Menu:** Provides quick access to View/Edit, Copy Password, Copy Login ID, and Delete.
+4.  **Add/Edit Credential Form:**
+    *   **Service Name:** Name of the service (e.g., "Google", "Netflix").
+    *   **Login ID:** Your username or email for that service.
+    *   **Password:** The password for the service. You can use the "Generate" (⚙️) button to create a strong one. Click "Show" (👁️) to toggle visibility.
+    *   **Website URL:** (Optional) The URL for the service.
+    *   **Notes:** (Optional) Any additional notes for this entry.
+    *   **Tags:** (Optional) Comma-separated tags for organization (e.g., "work, social").
+5.  **Profile Page:**
+    *   Access by clicking the "Profile" (👤) button on the dashboard.
+    *   **Edit Display Name.**
+    *   **Change Master Password:** If you enter a new master password, all your stored credentials will be re-encrypted with the new key derived from this new password. This process can take a moment if you have many credentials.
+    *   **Edit Password Hint & Account Recovery Email.**
+6.  **Logout:**
+    *   Click the "Logout" (🚪) button on the dashboard. Your clipboard will be cleared.
 
-## Future Improvements / TODO
+## Security Considerations
 
-*   **Implement Hashing & Encryption (Critical):** Use bcrypt/Argon2 for user passwords and AES for stored passwords.
-*   **Password Generation:** Add a feature to generate strong, random passwords.
-*   **Clipboard Integration:** Copy passwords to the clipboard securely (with auto-clear after a timeout).
-*   **Secure Configuration:** Load DB credentials from environment variables or a config file.
-*   **Enhanced UI/UX:** Use icons, improve layout, potentially add custom themes.
-*   **Actual Email Sending:** Implement password recovery email sending using `smtplib` or an email service API.
-*   **Two-Factor Authentication (2FA):** Add an extra layer of security for login.
-*   **Password History:** Keep track of previous passwords for an entry.
-*   **Audit Log:** Log important actions (login attempts, password changes).
-*   **Import/Export:** Allow users to import/export their password data securely (e.g., encrypted CSV/JSON).
-*   **More Robust Error Handling:** Provide more specific and user-friendly error feedback.
+*   **Master Password Strength:** The security of your entire vault depends on the strength of your master password. Choose a long, complex, and unique master password.
+*   **Client-Side Encryption:** Your actual passwords for services are encrypted on your computer before being sent to Firebase. This means that even if Firebase servers were compromised, your passwords would remain encrypted (assuming the encryption key, derived from your master password, is not compromised).
+*   **`serviceAccountKey.json`:** This file grants administrative access to your Firebase project. **Keep it secure and DO NOT commit it to public repositories.**
+*   **Clipboard Clearing:** The automatic clipboard clearing is a security measure. Be mindful of what you copy.
+*   **No Direct Master Password Recovery:** The application cannot directly tell you your master password. If forgotten, you must use the "Forgot Password?" link, which uses Firebase's email-based password reset. This will allow you to set a *new* master password. If you set a new master password this way, your old encrypted credentials will become **unreadable** unless you also update your master password within the "Edit Profile" section of the app *after* logging in with the new master password (which requires a re-encryption step). This re-encryption only happens if you change the master password *inside* the app's profile settings.
 
-## License
-
-(Optional: Choose a license if you plan to share the code)
-
-Example:
-`This project is licensed under the MIT License - see the LICENSE.md file for details.`
-
-*(If you choose MIT, create a `LICENSE.md` file with the standard MIT License text).*
-
-## Contributing
-
-(Optional: Add guidelines if you want others to contribute)
-
-Example:
-`Contributions are welcome! Please feel free to submit a pull request or open an issue.`
